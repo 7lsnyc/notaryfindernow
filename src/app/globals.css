@@ -1,13 +1,15 @@
-@import "tailwindcss";
-
-@theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --trust-blue: #1E90FF;
+  --dark-blue: #00008B;
+  --trust-green: #32CD32;
+  --trust-yellow: #FFD700;
+  --trust-grey: #E5E7EB;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -17,8 +19,70 @@
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  body {
+    @apply bg-background text-gray-900 font-poppins;
+  }
+  
+  h1 {
+    @apply text-4xl font-bold text-black tracking-tight;
+  }
+  
+  h2 {
+    @apply text-2xl font-bold text-black tracking-tight;
+  }
+  
+  body {
+    @apply text-gray-700 text-base leading-relaxed;
+  }
+}
+
+@layer components {
+  .container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .btn-primary {
+    @apply bg-yellow-500 text-white font-bold rounded-md border-2 border-blue-600 px-6 py-3 hover:bg-yellow-600 hover:scale-105 transition-transform shadow-md min-h-12;
+  }
+  
+  .badge {
+    @apply font-bold rounded-full px-4 py-1.5 border-2 border-b-2 ring-2 hover:scale-105 transition-transform shadow-sm;
+  }
+  
+  .badge-mobile {
+    @apply badge bg-green-500 text-white border-green-600 border-b-yellow-500 ring-yellow-500;
+  }
+  
+  .badge-24hour {
+    @apply badge bg-blue-500 text-white border-blue-600;
+  }
+  
+  .badge-free {
+    @apply badge bg-gray-700 text-white border-gray-800;
+  }
+  
+  .badge-book {
+    @apply badge bg-yellow-500 text-white border-yellow-600;
+  }
+  
+  .badge-remote {
+    @apply badge bg-blue-500 text-white border-blue-600 border-b-yellow-500 ring-yellow-500;
+  }
+  
+  .card {
+    @apply bg-gray-100 shadow-lg rounded-lg p-6 border border-gray-200;
+  }
+  
+  .section {
+    @apply flex flex-col md:flex-row gap-4 p-4 md:p-6;
+  }
+  
+  .tagline {
+    @apply text-green-600 font-bold text-lg tracking-tight;
+  }
+}
+
+.rounded-button {
+  @apply rounded-md shadow-sm;
 }
