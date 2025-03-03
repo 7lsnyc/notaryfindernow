@@ -5,11 +5,19 @@ import "./globals.css";
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true,
+  fallback: ['system-ui', 'arial'],
+});
+
 const poppins = Poppins({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   display: 'swap',
+  preload: true,
+  fallback: ['system-ui', 'arial'],
   variable: '--font-poppins',
 });
 
