@@ -448,37 +448,65 @@ export const notaryUtils = {
     serviceRadiusMiles?: number;
   }) {
     try {
-      console.log('Searching with params:', { latitude, longitude, radius, businessType, languages, minRating });
+      console.log('Starting notary search with params:', { 
+        latitude, 
+        longitude, 
+        radius, 
+        businessType, 
+        languages, 
+        minRating,
+        serviceRadiusMiles
+      });
       
       // Query the notaries table directly instead of using RPC
       let query = supabase
         .from('notaries')
         .select('*');
 
+      console.log('Building Supabase query...');
+
       // Apply filters
       if (minRating) {
+        console.log('Applying rating filter:', minRating);
         query = query.gte('rating', minRating);
       }
 
       if (businessType && businessType.length > 0) {
+        console.log('Applying business type filter:', businessType);
         query = query.overlaps('business_type', businessType);
       }
 
       if (languages && languages.length > 0) {
+        console.log('Applying language filter:', languages);
         query = query.overlaps('languages', languages);
       }
 
       // Execute the query
+      console.log('Executing Supabase query...');
       const { data: dbResults, error } = await query.limit(limit);
 
       if (error) {
         console.error('Supabase query error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         throw error;
       }
 
+      console.log('Query results:', {
+        count: dbResults?.length || 0,
+        usingSampleData: !dbResults || dbResults.length === 0,
+        firstResult: dbResults?.[0] ? {
+          id: dbResults[0].id,
+          name: dbResults[0].name,
+          city: dbResults[0].city
+        } : null
+      });
+
       // If no results from database, use sample data
       const data = dbResults && dbResults.length > 0 ? dbResults : sampleNotaries.notaries;
-      console.log('Using sample data:', !dbResults || dbResults.length === 0);
 
       // Post-process results to calculate distances and filter by radius
       const notariesWithDistance = data
@@ -514,7 +542,17 @@ export const notaryUtils = {
       // Sort by distance
       notariesWithDistance.sort((a, b) => (a.distance || 0) - (b.distance || 0));
 
-      return notariesWithDistance.slice(0, limit);
+      const finalResults = notariesWithDistance.slice(0, limit);
+      console.log('Final results:', {
+        count: finalResults.length,
+        firstResult: finalResults[0] ? {
+          id: finalResults[0].id,
+          name: finalResults[0].name,
+          distance: finalResults[0].distance
+        } : null
+      });
+
+      return finalResults;
     } catch (error) {
       console.error('Error in searchTier1Notaries:', error);
       throw error;

@@ -25,7 +25,11 @@ const LANGUAGES = [
   { value: 'Chinese', label: 'Chinese' }
 ];
 
-export default function SearchBar() {
+export interface SearchBarProps {
+  placeholder?: string;
+}
+
+export default function SearchBar({ placeholder = "Enter your location" }: SearchBarProps) {
   const router = useRouter();
   const [location, setLocation] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -45,7 +49,7 @@ export default function SearchBar() {
       // Get coordinates from location string
       const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
         location
-      )}&region=us&components=country:us&key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}`;
+      )}&region=us&components=country:us&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`;
       
       console.log('Geocoding URL:', geocodeUrl);
       const response = await fetch(geocodeUrl);
@@ -101,7 +105,7 @@ export default function SearchBar() {
       try {
         const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
           location
-        )}&region=us&components=country:us&key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}`;
+        )}&region=us&components=country:us&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`;
         
         const response = await fetch(geocodeUrl);
         const data = await response.json();
@@ -163,7 +167,7 @@ export default function SearchBar() {
 
       // Get location name from coordinates
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.coords.latitude},${position.coords.longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}`
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.coords.latitude},${position.coords.longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
       );
       const data = await response.json();
 
@@ -204,7 +208,7 @@ export default function SearchBar() {
           <div className="flex-1 relative">
             <input
               type="text"
-              placeholder="Enter your location"
+              placeholder={placeholder}
               value={location}
               onChange={(e) => {
                 setLocation(e.target.value);

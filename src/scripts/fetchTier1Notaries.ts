@@ -474,7 +474,7 @@ async function fetchTier1Notaries() {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'X-Goog-Api-Key': process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || '',
+                'X-Goog-Api-Key': process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
                 'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.editorialSummary,places.currentOpeningHours,places.types'
               },
               body: JSON.stringify({
@@ -691,7 +691,7 @@ async function searchNotariesInCity(
 ): Promise<NotaryData[]> {
   const notaries: NotaryData[] = [];
   const processedPlaceIds = new Set<string>();
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   
   if (!apiKey) {
     throw new Error('Google Places API key is not configured');

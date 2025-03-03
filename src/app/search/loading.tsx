@@ -1,3 +1,4 @@
+import type { SearchBarProps } from '../components/SearchBar';
 import SearchBar from '../components/SearchBar';
 
 export default function SearchLoading() {
