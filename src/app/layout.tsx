@@ -66,6 +66,13 @@ export default function RootLayout({
             `,
           }}
         />
+        
+        {/* Google AdSense Script */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2858704759926400"
+          crossOrigin="anonymous"
+        />
       </head>
       <body className="min-h-screen bg-white">
         <div className="flex flex-col min-h-screen">
