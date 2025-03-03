@@ -51,7 +51,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.className} ${poppins.variable}`}>
       <head>
-        {/* Google Analytics Script */}
+        {/* Google Analytics Script - Updated with GA4 Measurement ID */}
         <script
           async
           src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
