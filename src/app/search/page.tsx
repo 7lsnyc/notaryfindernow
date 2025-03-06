@@ -7,9 +7,17 @@ import { Notary } from '@/lib/supabase';
 import NotaryCard from '../components/NotaryCard';
 import SearchBar from '../components/SearchBar';
 
+interface NotaryGroup {
+  zip: string;
+  city: string;
+  state: string;
+  notaries: Notary[];
+}
+
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const [notaries, setNotaries] = useState<Notary[]>([]);
+  const [notaryGroups, setNotaryGroups] = useState<NotaryGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +54,24 @@ export default function SearchPage() {
 
         console.log('Search results:', results);
         setNotaries(results);
+
+        // Group notaries by ZIP code
+        const groupedNotaries = results.reduce<Record<string, NotaryGroup>>((acc, notary) => {
+          if (!acc[notary.zip]) {
+            acc[notary.zip] = {
+              zip: notary.zip,
+              city: notary.city,
+              state: notary.state,
+              notaries: []
+            };
+          }
+          acc[notary.zip].notaries.push(notary);
+          return acc;
+        }, {});
+
+        // Convert to array and sort by ZIP code
+        const sortedGroups = Object.values(groupedNotaries).sort((a, b) => a.zip.localeCompare(b.zip));
+        setNotaryGroups(sortedGroups);
       } catch (err) {
         console.error('Error fetching notaries:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch notaries. Please try again.');
@@ -78,14 +104,26 @@ export default function SearchPage() {
             Try Again
           </button>
         </div>
-      ) : notaries.length === 0 ? (
+      ) : notaryGroups.length === 0 ? (
         <div className="text-center text-gray-600 py-8">
           No notaries found matching your criteria. Try adjusting your filters or expanding your search radius.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {notaries.map((notary) => (
-            <NotaryCard key={notary.id} notary={notary} />
+        <div className="space-y-8">
+          {notaryGroups.map((group) => (
+            <div key={group.zip} className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                {group.city}, {group.state} {group.zip}
+                <span className="text-sm font-normal text-gray-600 ml-2">
+                  ({group.notaries.length} notaries)
+                </span>
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {group.notaries.map((notary) => (
+                  <NotaryCard key={notary.id} notary={notary} />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}

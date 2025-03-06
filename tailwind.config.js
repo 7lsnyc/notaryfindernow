@@ -8,27 +8,74 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'trust-blue': '#1E90FF',
-        'fresh-green': '#32CD32',
-        'warm-gray': '#D3D3D3',
-        'bright-yellow': '#FFD700',
-        'yellow-hover': '#FFC107',
-        'background': '#F5F5F5',
+        primary: {
+          DEFAULT: 'var(--primary)',
+          light: 'var(--primary-light)',
+          dark: 'var(--primary-dark)',
+        },
+        secondary: {
+          DEFAULT: 'var(--secondary)',
+          light: 'var(--secondary-light)',
+        },
+        accent: {
+          DEFAULT: 'var(--accent)',
+          light: 'var(--accent-light)',
+        },
+        neutral: {
+          50: 'var(--neutral-50)',
+          100: 'var(--neutral-100)',
+          300: 'var(--neutral-300)',
+          700: 'var(--neutral-700)',
+          900: 'var(--neutral-900)',
+        },
+        error: 'var(--error)',
+        success: 'var(--success)',
       },
       fontFamily: {
-        'poppins': ['Poppins', 'Roboto', 'sans-serif'],
+        sans: ['var(--font-family)'],
       },
-      fontSize: {
-        'h1': '32px',
-        'h2': '24px',
-        'body': '16px',
+      spacing: {
+        1: 'var(--spacing-1)',
+        2: 'var(--spacing-2)',
+        3: 'var(--spacing-3)',
+        4: 'var(--spacing-4)',
+        6: 'var(--spacing-6)',
+        8: 'var(--spacing-8)',
+        12: 'var(--spacing-12)',
+        16: 'var(--spacing-16)',
+      },
+      boxShadow: {
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+        focus: '0 0 0 3px rgba(66, 133, 244, 0.25)',
       },
       borderRadius: {
-        'button': '8px',
-        'pill': '9999px',
+        sm: 'var(--radius-sm)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
       },
-      padding: {
-        'badge': '12px',
+      borderWidth: {
+        DEFAULT: '1px',
+        '0': '0',
+        '1': '1px',
+        '1.5': '1.5px',
+        '2': '2px',
+      },
+      backgroundImage: {
+        'gradient-primary': 'var(--header-gradient)',
+        'gradient-card': 'linear-gradient(90deg, var(--primary), var(--secondary))',
+      },
+      fontSize: {
+        'star': '20px',
+      },
+      dropShadow: {
+        'text': '0 1px 2px rgba(0, 0, 0, 0.3)',
+        'text-lg': '0 2px 4px rgba(0, 0, 0, 0.3)',
+        'icon': '0 1px 1px rgba(0, 0, 0, 0.05)',
+      },
+      textUnderlineOffset: {
+        4: '4px',
       },
     },
   },

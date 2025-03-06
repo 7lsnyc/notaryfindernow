@@ -5,8 +5,9 @@ import { useState, useEffect } from 'react';
 import { notaryUtils, Notary } from '@/lib/supabase';
 import NotaryCard from '@/app/components/NotaryCard';
 import SEOMetadata from '@/app/components/SEOMetadata';
+import { Breadcrumbs } from '@/app/components/Breadcrumbs';
+import Link from 'next/link';
 import FeaturedNotaryCTA from '@/app/components/FeaturedNotaryCTA';
-import Breadcrumbs from '@/app/components/Breadcrumbs';
 import FAQSection from '@/app/components/FAQSection';
 
 export default function ZipPage() {

@@ -13,7 +13,7 @@ CREATE OR REPLACE FUNCTION search_tier1_notaries(
   p_service_radius_miles numeric DEFAULT NULL
 )
 RETURNS TABLE (
-  id uuid,
+  id text,
   created_at timestamptz,
   name text,
   email text,
@@ -43,6 +43,9 @@ RETURNS TABLE (
   remote_notary_states text[]
 ) AS $$
 BEGIN
+  -- Enable PostGIS in the search path
+  SET search_path TO public, postgis;
+
   RETURN QUERY
   SELECT 
     n.*,
@@ -54,7 +57,7 @@ BEGIN
   WHERE 
     -- Basic tier 1 criteria
     n.rating >= p_min_rating
-    AND n.review_count >= 10
+    AND n.review_count >= 1
     AND n.specialized_services IS NOT NULL
     AND array_length(n.specialized_services, 1) > 0
     
@@ -66,10 +69,10 @@ BEGIN
     )
     
     -- Business type filtering
-    AND (p_business_type IS NULL OR n.business_type && p_business_type)
+    AND (p_business_type IS NULL OR n.business_type::text[] && p_business_type)
     
     -- Language filtering
-    AND (p_languages IS NULL OR n.languages && p_languages)
+    AND (p_languages IS NULL OR n.languages::text[] && p_languages)
     
     -- Service radius filtering (if specified, ensure notary covers the search location)
     AND (

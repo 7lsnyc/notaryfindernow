@@ -28,7 +28,23 @@ export default function Navbar() {
           </Link>
           <Link 
             href="/notary-signup" 
-            className="bg-[#1E90FF] text-white px-4 py-2 rounded-md hover:bg-[#1873CC] transition-colors"
+            style={{
+              display: 'inline-block',
+              padding: '16px 32px',
+              backgroundColor: '#4285F4',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: '12px',
+              fontWeight: 500,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              border: 'none',
+              fontSize: '1.125rem',
+              lineHeight: '1.5',
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap',
+              minWidth: '160px',
+              textAlign: 'center'
+            }}
           >
             Notary Sign Up
           </Link>

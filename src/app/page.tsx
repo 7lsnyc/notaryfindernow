@@ -1,29 +1,57 @@
-'use client';
-
-import SearchBar from './components/SearchBar';
-import FeaturedNotaries from './components/FeaturedNotaries';
+import dynamic from 'next/dynamic';
+import SearchBar from '@/app/components/SearchBar';
 import Link from 'next/link';
 
+// Dynamically import FeaturedNotaries with no SSR and loading state
+const FeaturedNotaries = dynamic(
+  () => import('@/app/components/FeaturedNotaries').then(mod => mod.default),
+  {
+    loading: () => (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-white p-6 rounded-lg shadow-md animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          </div>
+        ))}
+      </div>
+    ),
+    ssr: false
+  }
+);
+
+// Top cities for quick access
 const TOP_CITIES = [
-  { name: 'Los Angeles', state: 'CA' },
   { name: 'New York City', state: 'NY' },
+  { name: 'Los Angeles', state: 'CA' },
   { name: 'Chicago', state: 'IL' },
   { name: 'Houston', state: 'TX' },
-  { name: 'Miami', state: 'FL' }
+  { name: 'Miami', state: 'FL' },
+  { name: 'Phoenix', state: 'AZ' },
+  { name: 'Philadelphia', state: 'PA' },
+  { name: 'San Antonio', state: 'TX' },
+  { name: 'San Diego', state: 'CA' },
+  { name: 'Dallas', state: 'TX' }
 ];
 
+// FAQ items
 const FAQ_ITEMS = [
   {
-    question: 'What is a mobile notary?',
-    answer: 'A mobile notary is a certified notary public who travels to your location to perform notarization services. They offer convenience by coming to your home, office, or any agreed-upon location.'
+    question: "What services do notaries offer?",
+    answer: "Notaries provide various services including document authentication, witnessing signatures, administering oaths, and certifying copies. Many also offer mobile services, coming to your location."
   },
   {
-    question: 'How much does a notary service cost?',
-    answer: 'Notary fees vary by state and service type. Basic notarization typically ranges from $5-15 per signature, while mobile notaries may charge additional travel fees. Some locations offer free notary services through banks or libraries.'
+    question: "How much does a notary service cost?",
+    answer: "Notary fees vary by state and service type. Basic notarizations typically range from $5-15 per signature, while mobile services may include additional travel fees."
   },
   {
-    question: 'What documents do I need for notarization?',
-    answer: 'You\'ll need the unsigned document(s) and valid government-issued photo ID (like a driver\'s license or passport). Some documents may require additional witnesses or specific forms.'
+    question: "Do I need an appointment?",
+    answer: "While some notaries accept walk-ins, it's recommended to schedule an appointment, especially for mobile or after-hours services."
+  },
+  {
+    question: "What documents do I need to bring?",
+    answer: "You'll need the document to be notarized and valid government-issued photo ID. Some documents may require additional witnesses or paperwork."
   }
 ];
 

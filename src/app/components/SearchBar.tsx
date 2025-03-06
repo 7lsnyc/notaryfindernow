@@ -47,39 +47,21 @@ export default function SearchBar({ placeholder = "Enter your location" }: Searc
 
     setIsSearching(true);
     try {
-      // Get coordinates from location string
-      const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-        location
-      )}&region=us&components=country:us&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`;
-      
-      console.log('Geocoding URL:', geocodeUrl);
-      const response = await fetch(geocodeUrl);
+      // Get coordinates from location string using our API
+      const response = await fetch(`/api/geocode?address=${encodeURIComponent(location)}`);
       const data = await response.json();
-      
-      console.log('Geocoding response:', data);
 
-      if (!data.results || data.results.length === 0) {
-        console.error('No results found for location:', location);
-        alert('We couldn\'t find that location. Please try again.');
-        setIsSearching(false);
-        return;
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Failed to get coordinates');
       }
 
-      if (data.status !== 'OK') {
-        console.error('Geocoding error status:', data.status, data.error_message);
-        alert('There was an issue with the location search. Please try again.');
-        setIsSearching(false);
-        return;
-      }
-
-      const { lat, lng } = data.results[0].geometry.location;
-      const formattedAddress = data.results[0].formatted_address;
+      const { latitude, longitude, location: formattedAddress } = data;
       setLocation(formattedAddress);
       
       // Update URL with search parameters
       const params = new URLSearchParams({
-        lat: lat.toString(),
-        lng: lng.toString(),
+        lat: latitude.toString(),
+        lng: longitude.toString(),
         location: formattedAddress,
         radius: radius.toString(),
         ...(selectedBusinessTypes.length > 0 && { businessTypes: selectedBusinessTypes.join(',') }),
@@ -104,30 +86,19 @@ export default function SearchBar({ placeholder = "Enter your location" }: Searc
       if (!location) return;
 
       try {
-        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-          location
-        )}&region=us&components=country:us&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`;
-        
-        const response = await fetch(geocodeUrl);
+        const response = await fetch(`/api/geocode?address=${encodeURIComponent(location)}`);
         const data = await response.json();
 
-        if (!data.results || data.results.length === 0) {
-          console.warn('No results found for location:', location);
-          return;
+        if (!response.ok || data.error) {
+          throw new Error(data.error || 'Failed to get coordinates');
         }
 
-        if (data.status !== 'OK') {
-          console.warn('Geocoding error:', data.status, data.error_message);
-          return;
-        }
-
-        const { lat, lng } = data.results[0].geometry.location;
-        const formattedAddress = data.results[0].formatted_address;
+        const { latitude, longitude, location: formattedAddress } = data;
         setLocation(formattedAddress);
         
         const params = new URLSearchParams({
-          lat: lat.toString(),
-          lng: lng.toString(),
+          lat: latitude.toString(),
+          lng: longitude.toString(),
           location: formattedAddress,
           radius: radius.toString(),
           ...(selectedBusinessTypes.length > 0 && { businessTypes: selectedBusinessTypes.join(',') }),
@@ -159,25 +130,56 @@ export default function SearchBar({ placeholder = "Enter your location" }: Searc
 
     setIsGettingLocation(true);
     try {
+      // Get current position with a longer timeout
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 10000,
-          enableHighAccuracy: true
-        });
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          (error) => {
+            console.error('Geolocation error:', error);
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                reject(new Error('Please allow location access to use this feature.'));
+                break;
+              case error.POSITION_UNAVAILABLE:
+                reject(new Error('Location information is unavailable.'));
+                break;
+              case error.TIMEOUT:
+                reject(new Error('Location request timed out.'));
+                break;
+              default:
+                reject(error);
+            }
+          },
+          {
+            timeout: 30000, // 30 seconds
+            enableHighAccuracy: true,
+            maximumAge: 0 // Always get fresh position
+          }
+        );
       });
 
-      // Get location name from coordinates
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.coords.latitude},${position.coords.longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
-      );
-      const data = await response.json();
+      console.log('Got position:', {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      });
 
-      if (!data.results || data.results.length === 0) {
-        alert('Could not determine your location. Please enter it manually.');
-        return;
+      // Get location name from coordinates using our API
+      const response = await fetch(
+        `/api/geocode?lat=${position.coords.latitude}&lng=${position.coords.longitude}`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to get address from coordinates');
       }
 
-      const address = data.results[0].formatted_address;
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      const { location: address } = data;
+      console.log('Got address:', address);
       setLocation(address);
       
       // Update URL with search parameters
@@ -195,137 +197,119 @@ export default function SearchBar({ placeholder = "Enter your location" }: Searc
       await router.push(`/search?${params.toString()}`);
     } catch (error) {
       console.error('Error getting location:', error);
-      alert('Unable to get your location. Please enter it manually.');
+      alert(error instanceof Error ? error.message : 'Failed to get your location. Please try entering it manually.');
     } finally {
       setIsGettingLocation(false);
     }
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4">
-      <div className="flex flex-col gap-4">
-        {/* Main search bar */}
-        <div className="flex gap-2">
-          <LocationInput
-            value={location}
-            onChange={(value) => {
-              setLocation(value);
-              if (value) {
-                debouncedSearch.cancel();
-                debouncedSearch(value);
-              }
-            }}
-            onSearch={updateSearch}
-            onGeolocation={handleGeolocation}
-            isGettingLocation={isGettingLocation}
-            placeholder={placeholder}
-          />
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Filters
-          </button>
-          <button
-            onClick={updateSearch}
-            disabled={isSearching || !location}
-            className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors ${
-              (isSearching || !location) ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            <MagnifyingGlassIcon className="w-5 h-5" />
-            Search
-          </button>
-        </div>
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="relative">
+        <LocationInput
+          value={location}
+          onChange={setLocation}
+          onSearch={updateSearch}
+          placeholder={placeholder}
+          isSearching={isSearching}
+          onGeolocation={handleGeolocation}
+          isGettingLocation={isGettingLocation}
+          onToggleFilters={() => setShowFilters(!showFilters)}
+          showFilters={showFilters}
+        />
+      </div>
 
-        {/* Filters panel */}
-        {showFilters && (
-          <div className="bg-white p-4 rounded-lg shadow-lg border">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Business Types */}
-              <div>
-                <h3 className="font-medium mb-2">Business Type</h3>
-                <div className="space-y-2">
-                  {BUSINESS_TYPES.map(({ value, label }) => (
-                    <label key={value} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedBusinessTypes.includes(value)}
-                        onChange={(e) => {
+      {showFilters && (
+        <div className="mt-4 p-4 bg-white rounded-lg shadow">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Business Types
+              </label>
+              <div className="space-y-2">
+                {BUSINESS_TYPES.map((type) => (
+                  <label key={type.value} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedBusinessTypes.includes(type.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedBusinessTypes([...selectedBusinessTypes, type.value]);
+                        } else {
                           setSelectedBusinessTypes(
-                            e.target.checked
-                              ? [...selectedBusinessTypes, value]
-                              : selectedBusinessTypes.filter((type) => type !== value)
+                            selectedBusinessTypes.filter((t) => t !== type.value)
                           );
-                        }}
-                        className="rounded text-blue-600"
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </div>
+                        }
+                      }}
+                      className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                    />
+                    <span className="ml-2 text-gray-700">{type.label}</span>
+                  </label>
+                ))}
               </div>
+            </div>
 
-              {/* Languages */}
-              <div>
-                <h3 className="font-medium mb-2">Languages</h3>
-                <div className="space-y-2">
-                  {LANGUAGES.map(({ value, label }) => (
-                    <label key={value} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedLanguages.includes(value)}
-                        onChange={(e) => {
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Languages
+              </label>
+              <div className="space-y-2">
+                {LANGUAGES.map((language) => (
+                  <label key={language.value} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedLanguages.includes(language.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedLanguages([...selectedLanguages, language.value]);
+                        } else {
                           setSelectedLanguages(
-                            e.target.checked
-                              ? [...selectedLanguages, value]
-                              : selectedLanguages.filter((lang) => lang !== value)
+                            selectedLanguages.filter((l) => l !== language.value)
                           );
-                        }}
-                        className="rounded text-blue-600"
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Search Radius */}
-              <div>
-                <h3 className="font-medium mb-2">Search Radius</h3>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="range"
-                    min="5"
-                    max="100"
-                    value={radius}
-                    onChange={(e) => setRadius(parseInt(e.target.value))}
-                    className="flex-1"
-                  />
-                  <span className="text-sm text-gray-600">{radius} miles</span>
-                </div>
-              </div>
-
-              {/* Minimum Rating */}
-              <div>
-                <h3 className="font-medium mb-2">Minimum Rating</h3>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="range"
-                    min="3"
-                    max="5"
-                    step="0.5"
-                    value={minRating}
-                    onChange={(e) => setMinRating(parseFloat(e.target.value))}
-                    className="flex-1"
-                  />
-                  <span className="text-sm text-gray-600">{minRating} stars</span>
-                </div>
+                        }
+                      }}
+                      className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                    />
+                    <span className="ml-2 text-gray-700">{language.label}</span>
+                  </label>
+                ))}
               </div>
             </div>
           </div>
-        )}
-      </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search Radius (miles)
+            </label>
+            <input
+              type="range"
+              min="5"
+              max="100"
+              step="5"
+              value={radius}
+              onChange={(e) => setRadius(parseInt(e.target.value))}
+              className="w-full"
+            />
+            <div className="text-sm text-gray-600 mt-1">{radius} miles</div>
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Minimum Rating
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="5"
+              step="0.5"
+              value={minRating}
+              onChange={(e) => setMinRating(parseFloat(e.target.value))}
+              className="w-full"
+            />
+            <div className="text-sm text-gray-600 mt-1">{minRating} stars</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

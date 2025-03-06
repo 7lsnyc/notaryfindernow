@@ -434,58 +434,37 @@ export const notaryUtils = {
     latitude, 
     longitude, 
     radius = 50,
-    limit = 20,
     businessType,
     languages,
-    minRating = 4.0,
+    minRating = 0,
     serviceRadiusMiles
   }: { 
     latitude: number;
     longitude: number;
     radius?: number;
-    limit?: number;
     businessType?: string[];
     languages?: string[];
     minRating?: number;
     serviceRadiusMiles?: number;
   }) {
     try {
-      console.log('Starting notary search with params:', { 
-        latitude, 
-        longitude, 
-        radius, 
-        businessType, 
-        languages, 
-        minRating,
-        serviceRadiusMiles
-      });
-      
-      // Query the notaries table directly instead of using RPC
-      let query = supabase
-        .from('notaries')
-        .select('*');
+      // Convert all parameters to numbers to ensure they're treated as double precision
+      const params = {
+        p_latitude: Number(latitude),
+        p_longitude: Number(longitude),
+        p_radius: Number(radius),
+        p_business_type: businessType || null,
+        p_languages: languages || null,
+        p_min_rating: Number(minRating),
+        p_service_radius_miles: serviceRadiusMiles ? Number(serviceRadiusMiles) : null
+      };
 
-      console.log('Building Supabase query...');
-
-      // Apply filters
-      if (minRating) {
-        console.log('Applying rating filter:', minRating);
-        query = query.gte('rating', minRating);
-      }
-
-      if (businessType && businessType.length > 0) {
-        console.log('Applying business type filter:', businessType);
-        query = query.overlaps('business_type', businessType);
-      }
-
-      if (languages && languages.length > 0) {
-        console.log('Applying language filter:', languages);
-        query = query.overlaps('languages', languages);
-      }
+      console.log('Starting notary search with params:', params);
 
       // Execute the query
       console.log('Executing Supabase query...');
-      const { data: dbResults, error } = await query.limit(limit);
+      const { data: notaries, error } = await supabase
+        .rpc('search_tier1_notaries', params);
 
       if (error) {
         console.error('Supabase query error:', error);
@@ -497,64 +476,22 @@ export const notaryUtils = {
         throw error;
       }
 
+      if (!notaries || notaries.length === 0) {
+        console.log('No notaries found in database');
+        return [];
+      }
+
       console.log('Query results:', {
-        count: dbResults?.length || 0,
-        usingSampleData: !dbResults || dbResults.length === 0,
-        firstResult: dbResults?.[0] ? {
-          id: dbResults[0].id,
-          name: dbResults[0].name,
-          city: dbResults[0].city
+        count: notaries.length,
+        firstResult: notaries[0] ? {
+          id: notaries[0].id,
+          name: notaries[0].name,
+          city: notaries[0].city,
+          distance: notaries[0].distance
         } : null
       });
 
-      // If no results from database, use sample data
-      const data = dbResults && dbResults.length > 0 ? dbResults : sampleNotaries.notaries;
-
-      // Post-process results to calculate distances and filter by radius
-      const notariesWithDistance = data
-        .filter(notary => {
-          // Apply business type filter if specified
-          if (businessType && businessType.length > 0) {
-            const notaryTypes = [...(notary.business_type || []), ...(notary.specialized_services || [])];
-            if (!businessType.some(type => notaryTypes.includes(type))) {
-              return false;
-            }
-          }
-
-          // Apply language filter if specified
-          if (languages && languages.length > 0) {
-            if (!languages.some(lang => notary.languages.map((l: string) => l.toLowerCase()).includes(lang.toLowerCase()))) {
-              return false;
-            }
-          }
-
-          // Apply rating filter
-          if (minRating && notary.rating < minRating) {
-            return false;
-          }
-
-          return true;
-        })
-        .map(notary => ({
-          ...notary,
-          distance: this.calculateDistance(latitude, longitude, notary.latitude, notary.longitude)
-        }))
-        .filter(notary => !radius || notary.distance <= radius);
-
-      // Sort by distance
-      notariesWithDistance.sort((a, b) => (a.distance || 0) - (b.distance || 0));
-
-      const finalResults = notariesWithDistance.slice(0, limit);
-      console.log('Final results:', {
-        count: finalResults.length,
-        firstResult: finalResults[0] ? {
-          id: finalResults[0].id,
-          name: finalResults[0].name,
-          distance: finalResults[0].distance
-        } : null
-      });
-
-      return finalResults;
+      return notaries;
     } catch (error) {
       console.error('Error in searchTier1Notaries:', error);
       throw error;
@@ -574,7 +511,7 @@ export const notaryUtils = {
     return R * c;
   },
 
-  async getFeaturedTier1Notaries({
+  getFeaturedTier1Notaries: async function({
     latitude,
     longitude,
     limit = 3
@@ -583,9 +520,58 @@ export const notaryUtils = {
     longitude: number;
     limit?: number;
   }) {
-    // For testing, return the top rated notaries from the sample data
-    const sortedNotaries = [...sampleNotaries.notaries].sort((a, b) => b.rating - a.rating);
-    return Promise.resolve(sortedNotaries.slice(0, limit));
+    try {
+      console.log('Fetching featured notaries for:', { latitude, longitude, limit });
+      
+      // Convert coordinates to numbers and validate
+      const params = {
+        p_latitude: Number(latitude),
+        p_longitude: Number(longitude),
+        p_limit: limit
+      };
+
+      console.log('Calling RPC with params:', params);
+      
+      const { data: notaries, error } = await supabase
+        .rpc('get_featured_tier1_notaries', params);
+
+      if (error) {
+        console.error('Error fetching featured notaries:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
+
+      if (!notaries) {
+        console.log('No notaries returned (null response)');
+        return [];
+      }
+
+      if (notaries.length === 0) {
+        console.log('No featured notaries found (empty array)');
+        return [];
+      }
+
+      console.log('Found featured notaries:', {
+        count: notaries.length,
+        results: notaries.map((n: Notary) => ({
+          id: n.id,
+          name: n.name,
+          city: n.city,
+          rating: n.rating,
+          distance: n.distance,
+          specialized_services: n.specialized_services
+        }))
+      });
+
+      return notaries;
+    } catch (error) {
+      console.error('Error in getFeaturedTier1Notaries:', error);
+      return [];
+    }
   },
 
   // Helper function to check if a notary is tier 1

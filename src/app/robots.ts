@@ -9,4 +9,6 @@ export default function robots(): MetadataRoute.Robots {
     },
     sitemap: 'https://notaryfindernow.com/sitemap.xml',
   }
-} 
+}
+
+export const runtime = 'nodejs'; 

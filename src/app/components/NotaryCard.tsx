@@ -1,89 +1,135 @@
-import { Notary, SpecializedService } from '@/lib/supabase';
-import { StarIcon, PhoneIcon, EnvelopeIcon, ClockIcon, GlobeAltIcon } from '@heroicons/react/24/solid';
-import { styles } from '@/app/styles/shared';
+'use client';
+
+import { Notary } from '@/lib/supabase';
+import { StarIcon } from '@heroicons/react/24/solid';
+import { PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 
 interface NotaryCardProps {
   notary: Notary;
 }
 
 export default function NotaryCard({ notary }: NotaryCardProps) {
-  // Format business hours for display
-  const formatBusinessHours = (hours: Record<string, string>) => {
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-    return hours[today] || 'Hours not available';
+  const renderRatingStars = (rating: number) => {
+    return Array.from({ length: 5 }).map((_, index) => (
+      <StarIcon
+        key={index}
+        className={`h-4 w-4 ${
+          index < Math.floor(rating) ? 'star' : 'star-empty'
+        }`}
+      />
+    ));
   };
 
+  // Format distance to 1 decimal place if less than 10 miles, otherwise round to nearest mile
+  const formattedDistance = notary.distance
+    ? notary.distance < 10
+      ? notary.distance.toFixed(1)
+      : Math.round(notary.distance)
+    : null;
+
   return (
-    <div className={styles.notaryCard}>
-      <div className={styles.flexBetween}>
-        <h3 className="font-poppins text-h2 font-bold text-gray-900">{notary.name}</h3>
-        <div className={styles.flexStart}>
-          <StarIcon className="h-5 w-5 text-bright-yellow" />
-          <span className="font-poppins text-body ml-1">{notary.rating.toFixed(1)}</span>
-          <span className="text-warm-gray ml-1">({notary.review_count})</span>
-        </div>
-      </div>
-
-      <div className="mt-4 space-y-2">
-        <p className={styles.body}>{notary.address}</p>
-        
-        <div className="flex flex-wrap gap-2 mt-3">
-          {notary.specialized_services.includes('24_hour' as SpecializedService) && (
-            <span className={styles.badges['24hour']}>24-Hour</span>
-          )}
-          {notary.is_available_now && (
-            <span className={styles.badges.bookToday}>Book Today</span>
-          )}
-          {notary.pricing?.starting_price && notary.pricing.starting_price <= 25 && (
-            <span className={styles.badges.lowCost}>Low-Cost</span>
-          )}
-        </div>
-
-        <div className="mt-4">
-          <h4 className="font-poppins font-semibold text-gray-800 mb-2">Services</h4>
-          <div className="flex flex-wrap gap-2">
-            {notary.services.map((service, index) => (
-              <span
-                key={index}
-                className="bg-warm-gray bg-opacity-20 text-gray-700 px-3 py-1 rounded-pill text-sm font-poppins"
-              >
-                {service}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {notary.languages && notary.languages.length > 0 && (
-          <div className="mt-4">
-            <h4 className="font-poppins font-semibold text-gray-800 mb-2">Languages</h4>
-            <div className="flex flex-wrap gap-2">
-              {notary.languages.map((language, index) => (
-                <span
-                  key={index}
-                  className="bg-trust-blue bg-opacity-10 text-trust-blue px-3 py-1 rounded-pill text-sm font-poppins"
-                >
-                  {language}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-6 flex justify-between items-center">
-          <div>
-            <span className="font-poppins font-semibold text-gray-900">
-              ${notary.pricing?.starting_price || '10'}/signature
+    <div className="card">
+      <div className="card-header">
+        <div>
+          <h3 className="card-title">{notary.name}</h3>
+          <div className="star-rating">
+            {renderRatingStars(notary.rating || 0)}
+            <span className="rating-count">
+              ({notary.review_count || 0} reviews)
             </span>
-            {notary.distance && (
-              <span className="text-warm-gray ml-2">
-                {notary.distance.toFixed(1)} miles away
+            {formattedDistance && (
+              <span className="rating-count">
+                • {formattedDistance} mi
               </span>
             )}
           </div>
-          <button className={styles.primaryButton}>
-            Contact Now
-          </button>
         </div>
+      </div>
+
+      <div className="card-content">
+        {notary.business_type && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {notary.business_type.map((type) => (
+              <span
+                key={type}
+                className="tag tag-mobile"
+              >
+                {type}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {notary.specialized_services && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {notary.specialized_services.map((service) => (
+              <span
+                key={service}
+                className={`tag ${
+                  service === 'mobile_notary'
+                    ? 'tag-mobile'
+                    : service === '24_hour'
+                    ? 'tag-24hour'
+                    : service === 'free_service'
+                    ? 'tag-free'
+                    : 'tag-mobile'
+                }`}
+              >
+                {service.replace('_', ' ')}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <p className="text-sm text-neutral-700">
+          {notary.address}
+        </p>
+
+        {notary.pricing && notary.pricing.starting_price && (
+          <p className="text-sm text-neutral-700">
+            Starting at ${notary.pricing.starting_price}
+          </p>
+        )}
+
+        <div className="flex flex-col gap-2 mt-4">
+          {notary.phone && (
+            <a
+              href={`tel:${notary.phone}`}
+              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800"
+            >
+              <PhoneIcon className="h-4 w-4" />
+              {notary.phone}
+            </a>
+          )}
+          {notary.email && (
+            <a
+              href={`mailto:${notary.email}`}
+              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800"
+            >
+              <EnvelopeIcon className="h-4 w-4" />
+              {notary.email}
+            </a>
+          )}
+        </div>
+      </div>
+
+      <div className="card-footer flex gap-2">
+        {notary.phone && (
+          <a
+            href={`tel:${notary.phone}`}
+            className="flex-1 btn btn-secondary flex items-center justify-center gap-2"
+          >
+            <PhoneIcon className="h-5 w-5" />
+            Call Now
+          </a>
+        )}
+        <Link
+          href={`/${notary.state.toLowerCase()}/${notary.city.toLowerCase()}/${notary.id}`}
+          className="flex-1 btn btn-primary"
+        >
+          View Details
+        </Link>
       </div>
     </div>
   );

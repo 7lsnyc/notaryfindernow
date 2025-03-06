@@ -3,7 +3,7 @@ import ClientNotaryCard from '@/app/components/ClientNotaryCard';
 import ClientSEOMetadata from '@/app/components/ClientSEOMetadata';
 import FeaturedNotaryCTA from '@/app/components/FeaturedNotaryCTA';
 import Link from 'next/link';
-import Breadcrumbs from '@/app/components/Breadcrumbs';
+import { Breadcrumbs } from '@/app/components/Breadcrumbs';
 import ClientFAQWrapper from '@/app/components/ClientFAQWrapper';
 
 interface CityPageProps {

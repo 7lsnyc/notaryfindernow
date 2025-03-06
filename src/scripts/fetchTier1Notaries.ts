@@ -46,16 +46,8 @@ const CONFIG = {
     'traveling notary',
     'notary signing agent',
     'loan signing',
-    'notario publico' // Add Spanish term to catch Hispanic community notaries
-  ],
-  INITIAL_CITY: {
-    name: 'Los Angeles',
-    state: 'CA',
-    coordinates: {
-      lat: 34.0522,
-      lng: -118.2437
-    }
-  }
+    'notario publico'
+  ]
 };
 
 interface Review {
@@ -643,38 +635,52 @@ async function loadProgress(): Promise<{ lastState?: string; lastCity?: string; 
 fetchTier1Notaries().catch(console.error);
 
 async function main() {
-  console.log('Starting notary search...');
-  console.log('API Credits Budget: $300');
-
+  console.log('Starting national notary search...');
+  
   try {
-    // Use the configured initial city
-    const { name, state, coordinates } = CONFIG.INITIAL_CITY;
-    console.log(`Searching in ${name}, ${state}...`);
-    
-    const notaries = await searchNotariesInCity(
-      name,
-      state,
-      coordinates.lat,
-      coordinates.lng
-    );
-
-    if (notaries.length > 0) {
-      console.log(`Found ${notaries.length} notaries in ${name}, ${state}`);
+    // Iterate through all states and their major cities
+    for (const [state, cities] of Object.entries(MAJOR_CITIES_BY_STATE)) {
+      console.log(`Processing state: ${state}`);
       
-      // Insert notaries into Supabase
-      const { error } = await supabase
-        .from('notaries')
-        .upsert(notaries, { onConflict: 'place_id' });
+      for (const city of cities) {
+        console.log(`Searching in ${city.name}, ${state}...`);
+        
+        try {
+          const notaries = await searchNotariesInCity(
+            city.name,
+            state,
+            city.latitude,
+            city.longitude
+          );
 
-      if (error) {
-        console.error('Error inserting notaries:', error);
-      } else {
-        console.log(`Successfully inserted ${notaries.length} notaries`);
+          if (notaries.length > 0) {
+            console.log(`Found ${notaries.length} notaries in ${city.name}, ${state}`);
+            
+            // Insert notaries into Supabase
+            const { error } = await supabase
+              .from('notaries')
+              .upsert(notaries, { onConflict: 'place_id' });
+
+            if (error) {
+              console.error(`Error inserting notaries for ${city.name}:`, error);
+            } else {
+              console.log(`Successfully inserted ${notaries.length} notaries for ${city.name}`);
+            }
+          } else {
+            console.log(`No notaries found in ${city.name}, ${state}`);
+          }
+
+          // Rate limiting
+          await setTimeout(1000 / CONFIG.REQUESTS_PER_SECOND);
+        } catch (error) {
+          console.error(`Error processing ${city.name}, ${state}:`, error);
+          // Continue with next city even if one fails
+          continue;
+        }
       }
-    } else {
-      console.log(`No notaries found in ${name}, ${state}`);
     }
 
+    console.log('National notary search completed');
     console.log(`API Credits Used: ${apiCreditsUsed}`);
     console.log(`Approximate Cost: $${(apiCreditsUsed * 0.02).toFixed(2)}`);
 

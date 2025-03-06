@@ -6,7 +6,7 @@ import { notaryUtils, MAJOR_CITIES_BY_STATE, STATE_ABBREVIATIONS, Notary } from 
 import NotaryCard from '@/app/components/NotaryCard';
 import SEOMetadata from '@/app/components/SEOMetadata';
 import FeaturedNotaryCTA from '@/app/components/FeaturedNotaryCTA';
-import Breadcrumbs from '@/app/components/Breadcrumbs';
+import { Breadcrumbs } from '@/app/components/Breadcrumbs';
 import FAQSection from '@/app/components/FAQSection';
 import Link from 'next/link';
 
