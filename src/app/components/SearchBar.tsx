@@ -2,9 +2,10 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { MagnifyingGlassIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { notaryUtils } from '@/lib/supabase';
 import { debounce } from 'lodash';
+import { LocationInput } from './search/LocationInput';
 
 // Available business types
 const BUSINESS_TYPES = [
@@ -205,38 +206,20 @@ export default function SearchBar({ placeholder = "Enter your location" }: Searc
       <div className="flex flex-col gap-4">
         {/* Main search bar */}
         <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              placeholder={placeholder}
-              value={location}
-              onChange={(e) => {
-                setLocation(e.target.value);
-                if (e.target.value) {
-                  debouncedSearch.cancel(); // Cancel any pending debounced searches
-                  debouncedSearch(e.target.value);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  debouncedSearch.cancel(); // Cancel any pending debounced searches
-                  updateSearch();
-                }
-              }}
-              className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 pr-10"
-            />
-            <button
-              onClick={handleGeolocation}
-              disabled={isGettingLocation}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 ${
-                isGettingLocation ? 'text-gray-400' : 'text-gray-400 hover:text-gray-600'
-              } transition-colors`}
-              title="Use my current location"
-            >
-              <MapPinIcon className={`w-5 h-5 ${isGettingLocation ? 'animate-pulse' : ''}`} />
-            </button>
-          </div>
+          <LocationInput
+            value={location}
+            onChange={(value) => {
+              setLocation(value);
+              if (value) {
+                debouncedSearch.cancel();
+                debouncedSearch(value);
+              }
+            }}
+            onSearch={updateSearch}
+            onGeolocation={handleGeolocation}
+            isGettingLocation={isGettingLocation}
+            placeholder={placeholder}
+          />
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
@@ -250,7 +233,7 @@ export default function SearchBar({ placeholder = "Enter your location" }: Searc
               (isSearching || !location) ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
-            <MagnifyingGlassIcon className={`w-5 h-5 ${isSearching ? 'animate-spin' : ''}`} />
+            <MagnifyingGlassIcon className="w-5 h-5" />
             Search
           </button>
         </div>
